@@ -65,7 +65,6 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.primaryColor,
     paddingHorizontal: 20,
     paddingVertical: 15,
-    borderRadius: 5,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center'
