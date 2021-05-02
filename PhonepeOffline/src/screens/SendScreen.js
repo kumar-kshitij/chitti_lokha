@@ -1,15 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableHighlight, ActivityIndicator } from 'react-native';
-
-const MERCHANT_NAME = 'WASIF STATIONARY';
+import { THEME, MERCHANT_NAME, CREDIT_SCORE } from '../constants';
+import SessionContext from '../SessionContext';
+import { uuid } from '../utils';
 
 export default function SendScreen() {
   const [view, setView] = useState(1);
   const [amount, setAmount] = useState('');
   const [pin, setPin] = useState('');
+  const { state, dispatch } = useContext(SessionContext);
+  const [isLoading, setLoading] = useState(false);
+
+  const transaction_limit = state.walletBalance + CREDIT_SCORE * 10;
 
   function onChangeAmount(value) {
-    setAmount(Number(value));
+    if (Number(value) <= transaction_limit) {
+      setAmount(Number(value));
+    }
   }
 
   useEffect(() => {
@@ -20,7 +27,7 @@ export default function SendScreen() {
     <View style={styles.container}>
       {view === 1 ? <View style={{ flex: 1, justifyContent: 'center' }}>
         <Text style={[styles.text, { marginBottom: 10 }]}>Searching for nearby merchants...</Text>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator size="large" color={THEME.primaryColor} />
       </View> : null}
       {view === 2 ? <View>
         <Text style={{ padding: 20 }}>Select merchant to proceed for payment : </Text>
@@ -31,7 +38,15 @@ export default function SendScreen() {
         </TouchableHighlight>
       </View> : null}
       {view === 3 ? <View style={styles.innerContainer}>
-        <Text style={styles.merchantName}>{MERCHANT_NAME}</Text>
+        <Text style={{ fontSize: 20, fontWeight: 'bold', marginBottom: 30 }}>{MERCHANT_NAME}</Text>
+        <View style={{ flexDirection: 'row', marginBottom: 10, fontSize: 16 }}>
+          <Text>Offline Wallet Balance : </Text>
+          <Text style={{ fontWeight: 'bold' }}>{state.walletBalance < 0 ? '- ' : ''}₹{Math.abs(state.walletBalance).toString()}</Text>
+        </View>
+        <View style={{ flexDirection: 'row', marginBottom: 30, fontSize: 16 }}>
+          <Text>Transaction Limit : </Text>
+          <Text style={{ fontWeight: 'bold' }}>₹{transaction_limit.toString()}</Text>
+        </View>
         <TextInput
           style={styles.input}
           onChangeText={onChangeAmount}
@@ -41,15 +56,26 @@ export default function SendScreen() {
           autoFocus
         />
         <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-          <TouchableHighlight onPress={() => setView(4)}>
+          <TouchableHighlight onPress={() => {
+            if (Number(amount) > 0) {
+              setLoading(true);
+              setTimeout(() => {
+                setLoading(false);
+                setView(4);
+              }, 2000)
+            }
+          }} disabled={isLoading}>
             <View style={styles.buttonBody}>
+              {isLoading ? <View style={{ marginRight: 10 }}>
+                <ActivityIndicator size="small" color="white" />
+              </View> : null}
               <Text style={styles.buttonText}>Pay</Text>
             </View>
           </TouchableHighlight>
         </View>
       </View> : null}
       {view === 4 ? <View style={styles.innerContainer}>
-        <Text style={{ textAlign: 'center', fontSize: 20, fontWeight: 'bold', marginBottom: 50 }}>Enter UPI Pin : </Text>
+        <Text style={{ textAlign: 'center', fontSize: 20, fontWeight: 'bold', marginBottom: 50 }}>Enter Security Pin : </Text>
         <TextInput
           style={[styles.input, { letterSpacing: 10 }]}
           onChangeText={setPin}
@@ -63,8 +89,26 @@ export default function SendScreen() {
           secureTextEntry
         />
         <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-          <TouchableHighlight onPress={() => setView(5)}>
+          <TouchableHighlight onPress={() => {
+            setLoading(true);
+            setTimeout(() => {
+              dispatch({ type: 'update_wallet', payload: -amount });
+              dispatch({
+                type: 'insert_transaction', payload: {
+                  id: uuid(),
+                  name: MERCHANT_NAME,
+                  time: new Date().getTime(),
+                  amount: -amount
+                }
+              });
+              setLoading(false);
+              setView(5);
+            }, 2000);
+          }} disabled={isLoading}>
             <View style={styles.buttonBody}>
+              {isLoading ? <View style={{ marginRight: 10 }}>
+                <ActivityIndicator size="small" color="white" />
+              </View> : null}
               <Text style={styles.buttonText}>Proceed</Text>
             </View>
           </TouchableHighlight>
@@ -74,7 +118,11 @@ export default function SendScreen() {
         <Text style={[styles.text, { marginBottom: 10 }]}>You paid </Text>
         <Text style={{ textAlign: 'center', fontSize: 50, fontWeight: 'bold', marginBottom: 10 }}>{amount.toString()}</Text>
         <Text style={[styles.text, { marginBottom: 10 }]}>To</Text>
-        <Text style={[styles.text, { fontWeight: 'bold' }]}>{MERCHANT_NAME}</Text>
+        <Text style={[styles.text, { fontWeight: 'bold', marginBottom: 50 }]}>{MERCHANT_NAME}</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'center', fontSize: 16 }}>
+          <Text>Offline Wallet Balance : </Text>
+          <Text style={{ fontWeight: 'bold' }}>{state.walletBalance < 0 ? '- ' : ''}₹{Math.abs(state.walletBalance).toString()}</Text>
+        </View>
       </View> : null}
     </View>
   );
@@ -83,14 +131,14 @@ export default function SendScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff'
+    backgroundColor: 'white'
   },
   innerContainer: {
     flex: 1,
     padding: 20,
   },
   input: {
-    borderColor: '#007AFF',
+    borderColor: THEME.primaryColor,
     borderWidth: 2,
     borderRadius: 5,
     paddingHorizontal: 20,
@@ -98,29 +146,26 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold'
   },
-  merchantName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 50
-  },
   buttonBody: {
-    backgroundColor: '#007AFF',
+    backgroundColor: THEME.primaryColor,
     paddingHorizontal: 20,
     paddingVertical: 15,
-    borderRadius: 5
+    borderRadius: 5,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center'
   },
   buttonText: {
     color: 'white',
     fontSize: 20,
-    fontWeight: 'bold',
-    textAlign: 'center'
+    fontWeight: 'bold'
   },
   text: {
     fontSize: 16,
     textAlign: 'center'
   },
   altButtonBody: {
-    backgroundColor: '#007AFF',
+    backgroundColor: THEME.primaryColor,
     padding: 20,
     borderBottomColor: 'white',
     borderBottomWidth: 1

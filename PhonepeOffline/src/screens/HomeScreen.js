@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View, TouchableHighlight } from 'react-native';
+import { THEME } from '../constants';
 
 export default function HomeScreen({ navigation }) {
   return (
@@ -9,9 +10,9 @@ export default function HomeScreen({ navigation }) {
           <Text style={styles.buttonText}>Send Money</Text>
         </View>
       </TouchableHighlight>
-      <TouchableHighlight onPress={() => navigation.navigate('Recieve Money')}>
+      <TouchableHighlight onPress={() => navigation.navigate('Receive Money')}>
         <View style={styles.buttonBody}>
-          <Text style={styles.buttonText}>Recieve Money</Text>
+          <Text style={styles.buttonText}>Receive Money</Text>
         </View>
       </TouchableHighlight>
       <TouchableHighlight onPress={() => navigation.navigate('Pending Transactions')}>
@@ -26,11 +27,11 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: 'white',
     justifyContent: 'flex-end'
   },
   buttonBody: {
-    backgroundColor: '#007AFF',
+    backgroundColor: THEME.primaryColor,
     padding: 20,
     borderBottomColor: 'white',
     borderBottomWidth: 1

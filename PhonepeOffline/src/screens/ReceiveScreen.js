@@ -1,17 +1,31 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { StyleSheet, Text, View, ActivityIndicator, ProgressBarAndroid } from 'react-native';
+import { THEME, SENDER_NAME } from '../constants';
+import SessionContext from '../SessionContext';
+import { uuid } from '../utils';
 
 const AMOUNT = 100;
-const SENDER_NAME = 'Aryan Gaurav';
 
-export default function RecieveScreen() {
+export default function ReceiveScreen() {
   const [view, setView] = useState(1);
   // const [progress, setProgress] = useState(0.1);
+  const { state, dispatch } = useContext(SessionContext);
 
   useEffect(() => {
     setTimeout(() => {
       setView(2);
-      setTimeout(() => setView(3), 3000);
+      setTimeout(() => {
+        dispatch({ type: 'update_wallet', payload: AMOUNT });
+        dispatch({
+          type: 'insert_transaction', payload: {
+            id: uuid(),
+            name: SENDER_NAME,
+            time: new Date().getTime(),
+            amount: AMOUNT
+          }
+        });
+        setView(3);
+      }, 3000);
     }, 5000);
   }, []);
 
@@ -25,12 +39,12 @@ export default function RecieveScreen() {
     <View style={styles.container}>
       {view === 1 ? <View>
         <Text style={[styles.text, { marginBottom: 10 }]}>Waiting for sender...</Text>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator size="large" color={THEME.primaryColor} />
       </View> : null}
       {view === 2 ? <View>
         <Text style={styles.text}>Recieving money from </Text>
         <Text style={[styles.text, { fontWeight: 'bold', marginBottom: 10 }]}>{SENDER_NAME}</Text>
-        <ProgressBarAndroid styleAttr="Horizontal"
+        <ProgressBarAndroid styleAttr="Horizontal" color={THEME.primaryColor}
         // indeterminate={false}
         // progress={progress}
         />
@@ -38,7 +52,11 @@ export default function RecieveScreen() {
       {view === 3 ? <View>
         <Text style={[styles.text, { fontWeight: 'bold' }]}>{SENDER_NAME}</Text>
         <Text style={[styles.text, { marginBottom: 10 }]}> paid</Text>
-        <Text style={{ textAlign: 'center', fontSize: 50, fontWeight: 'bold' }}>{AMOUNT.toString()}</Text>
+        <Text style={{ textAlign: 'center', fontSize: 50, fontWeight: 'bold', marginBottom: 50 }}>{AMOUNT.toString()}</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'center', fontSize: 16 }}>
+          <Text>Offline Wallet Balance : </Text>
+          <Text style={{ fontWeight: 'bold' }}>{state.walletBalance < 0 ? '- ' : ''}₹{Math.abs(state.walletBalance).toString()}</Text>
+        </View>
       </View> : null}
     </View>
   );
@@ -47,7 +65,7 @@ export default function RecieveScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: 'white',
     justifyContent: 'center'
   },
   text: {
